@@ -1,7 +1,6 @@
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
-import { PlanningCenterService } from './planning-center.service';
-import { ConfigService } from './config.service';
+import { PlanningCenterStore } from './planning-center/planning-center.store';
 
 @NgModule({
   declarations: [
@@ -10,9 +9,8 @@ import { ConfigService } from './config.service';
     HttpClientModule,
   ],
   providers: [
-    ConfigService,
-    PlanningCenterService,
+    PlanningCenterStore
   ],
   bootstrap: []
 })
-export class ServicesModule { }
+export class StoresModule { }

@@ -6,6 +6,7 @@ import { MaterialModule } from './material.module';
 import { PagesModule } from './pages/pages.module';
 import { RoutingModule } from './routing/routing.module';
 import { ServicesModule } from './services/services.module';
+import { StoresModule } from './stores/stores.module';
 
 @NgModule({
   declarations: [
@@ -18,6 +19,7 @@ import { ServicesModule } from './services/services.module';
     PagesModule,
     RoutingModule,
     ServicesModule,
+    StoresModule
   ],
   providers: [],
   bootstrap: [AppComponent]

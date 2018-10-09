@@ -1,0 +1,17 @@
+.toolbar-fill-remaining-space {
+    flex: 1 1 auto;
+  }
+
+.router-container {
+    margin: 8px 16px 0px 16px;
+}
+
+mat-toolbar {
+    & span {
+        & a {
+            cursor: pointer;
+            text-decoration: none;
+            color: #fff;
+        }
+    }
+}

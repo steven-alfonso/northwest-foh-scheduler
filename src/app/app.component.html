@@ -1,2 +1,10 @@
-<h1>Hello</h1>
-<router-outlet class="hidden-router"></router-outlet>
+<mat-toolbar color="primary">
+  <span>
+    <a (click)="navigateToHome()">Northwest Assembly FOH</a>
+  </span>
+  <span class="toolbar-fill-remaining-space"></span>
+  <span>STEVEN</span>
+</mat-toolbar>
+<div class="router-container">
+  <router-outlet class="hidden-router"></router-outlet>
+</div>
