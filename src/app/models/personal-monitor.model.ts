@@ -5,7 +5,7 @@ export class PersonalMonitorChannel {
         this.channel = channel;
     }
 
-    setInUse(inUse:boolean) {
+    setInUse(inUse: boolean) {
         this.inUse = inUse;
     }
 }
@@ -19,8 +19,8 @@ export class PersonalMonitor {
         }
     }
 
-    setInUse(channel: number, inUse:boolean) {
-        this.channels[channel-1].inUse = inUse;
+    setInUse(channel: number, inUse: boolean) {
+        this.channels[channel - 1].inUse = inUse;
     }
 
 }

@@ -24,7 +24,9 @@
             "tsConfig": "src/tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/config.json",
+              "src/mock-data"
             ],
             "styles": [
               "src/styles.scss"
@@ -82,7 +84,8 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
-              "src/config.json"
+              "src/config.json",
+              "src/mock-data"
             ]
           }
         },

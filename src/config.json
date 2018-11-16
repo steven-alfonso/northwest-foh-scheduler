@@ -1,27 +1,28 @@
 {
-    "planningCenterApi": {
-        "url": "https://api.planningcenteronline.com/services/v2",
-        "routes": {
-            "plans": "/service_types/:serviceTypeId/plans?offset=:offset&per_page=100",
-            "membersOnPlan":"/service_types/:serviceTypeId/plans/:planId/team_members"
-        },
-        "plans": [
-            {
-                "id": 377977,
-                "name": "Weekend Experience",
-                "offset": 370
-            },
-            {
-                "id": 775724,
-                "name": "Spiritual Emphasis Night",
-                "offset": 0,
-                "default": false
-            }
-        ],
-        "options": {
-            "headers": {
-                "authorization": "Basic MDUzNjk2MWIyOTFkYTU3ZjI3MTRjNmUzMTQ1NjYyYWE0ZWQzMzMwYjIwMWRkYmJmMDA5MTAwM2M4NmJkNjc1YTo0M2E0Zjc2NWMwYWEyZDQ3MjY5NmJmODE0NmJkZmM0MTk3NWQ4MjZlZWU0Y2NiZTIwZjVhNzU2ZTE0YjdmMjlk"
-            }
-        }
+  "planningCenterApi": {
+    "url": "https://api.planningcenteronline.com/services/v2",
+    "routes": {
+      "plans": "/service_types/:serviceTypeId/plans?offset=:offset&per_page=100",
+      "membersOnPlan": "/service_types/:serviceTypeId/plans/:planId/team_members"
+    },
+    "plans": [
+      {
+        "id": 377977,
+        "name": "Weekend Experience",
+        "offset": 370
+      },
+      {
+        "id": 775724,
+        "name": "Spiritual Emphasis Night",
+        "offset": 0,
+        "default": false
+      }
+    ],
+    "options": {
+      "headers": {
+        "authorization": "Basic MDUzNjk2MWIyOTFkYTU3ZjI3MTRjNmUzMTQ1NjYyYWE0ZWQzMzMwYjIwMWRkYmJmMDA5MTAwM2M4NmJkNjc1YTo0M2E0Zjc2NWMwYWEyZDQ3MjY5NmJmODE0NmJkZmM0MTk3NWQ4MjZlZWU0Y2NiZTIwZjVhNzU2ZTE0YjdmMjlk"
+      }
     }
+  },
+  "microphones": ["V1", "V2", "V3", "V4", "V5", "V6", "LDVOX", "Wired", "Floor", "Pastor"]
 }

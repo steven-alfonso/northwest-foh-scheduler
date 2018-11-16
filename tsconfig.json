@@ -1,6 +1,8 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
@@ -18,11 +20,21 @@
       "dom"
     ],
     "paths": {
-      "@components/*":["src/app/components/*"],
-      "@models/*": ["src/app/models/*"],
-      "@pages/*": ["src/app/pages/*"],
-      "@services/*":["src/app/services/*"],
-      "@stores/*":["src/app/stores/*"]
-    } 
+      "@components/*": [
+        "src/app/components/*"
+      ],
+      "@models/*": [
+        "src/app/models/*"
+      ],
+      "@pages/*": [
+        "src/app/pages/*"
+      ],
+      "@services/*": [
+        "src/app/services/*"
+      ],
+      "@stores/*": [
+        "src/app/stores/*"
+      ]
+    }
   }
 }

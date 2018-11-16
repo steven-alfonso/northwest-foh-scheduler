@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import * as moment from 'moment/moment';
 import { PlanningCenterStore } from '@stores/planning-center/planning-center.store';
+import moment from 'moment/moment';
 
 @Component({
   selector: 'app-home-page',
