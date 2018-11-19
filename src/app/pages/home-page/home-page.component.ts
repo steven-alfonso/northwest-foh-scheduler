@@ -19,7 +19,7 @@ export class HomePageComponent {
   }
 
   ch() {
-    this.planningCenterStore.createHelper(377977, moment().toDate(), moment().add(5, 'days').toDate());
+    this.planningCenterStore.createHelper(377977, moment().toDate(), moment().add(7, 'days').toDate());
     this.router.navigate(['weekend-experience']);
   }
 

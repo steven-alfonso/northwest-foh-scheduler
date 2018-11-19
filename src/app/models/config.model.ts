@@ -22,8 +22,11 @@ export class Config {
         routes: {
             plans: string;
             membersOnPlan: string;
+            arrangementsOnSong: string;
+            itemsOnPlan: string;
         };
         plans: Array<ConfigPlan>;
         options: HttpOptions;
     };
+    microphones: string[];
 }

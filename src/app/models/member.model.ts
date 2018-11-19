@@ -2,16 +2,16 @@ import { IEMPack } from './iem-pack.model';
 import { Microphone } from './microphone.model';
 import { PersonalMonitorChannel } from './personal-monitor.model';
 
-export class Person {
+export class Member {
   id: number;
   name: string;
-  teamPositionName: string;
+  positionName: string;
   needHeadphones: boolean;
-  personalMonitorChannel: PersonalMonitorChannel;
-  iemPack: IEMPack;
-  microphone: Microphone;
+  // personalMonitorChannel: PersonalMonitorChannel;
+  // iemPack: IEMPack;
+  // microphone: Microphone;
 
-  constructor(_p: Person) {
+  constructor(_p: Member) {
     Object.assign(this, _p);
   }
 }

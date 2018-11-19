@@ -14,11 +14,11 @@ export class PcoPlanDatum {
 }
 
 export class Attributes {
-    created_at:             string;
+    created_at:             Date;
     dates:                  string;
-    files_expire_at:        string;
+    files_expire_at:        Date;
     items_count:            number;
-    last_time_at:           string;
+    last_time_at:           Date;
     multi_day:              boolean;
     needed_positions_count: number;
     other_time_count:       number;
@@ -30,10 +30,10 @@ export class Attributes {
     series_title:           null | string;
     service_time_count:     number;
     short_dates:            string;
-    sort_date:              string;
+    sort_date:              Date;
     title:                  null | string;
     total_length:           number;
-    updated_at:             string;
+    updated_at:             Date;
 }
 
 export enum Permissions {

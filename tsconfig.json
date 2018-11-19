@@ -34,6 +34,9 @@
       ],
       "@stores/*": [
         "src/app/stores/*"
+      ],
+      "@utils/*": [
+        "src/app/utils/*"
       ]
     }
   }

@@ -1,7 +1,7 @@
 <h2>Weekend Experience</h2>
 Getting Data: {{ creatingHelpers$ | async }} <br />
-<ng-container *ngIf="arrangements$ | async as arrangements"></ng-container>
-<table mat-table [dataSource]="personListDataSource" class="mat-elevation-z2">
+<ng-container *ngIf="(arrangements$ | async) as arrangements"></ng-container>
+<table mat-table [dataSource]="personListDataSource" class="mat-elevation-z2" style="width:100%">
   <ng-container matColumnDef="name">
     <th mat-header-cell *matHeaderCellDef>Name</th>
     <td mat-cell *matCellDef="let element">{{ element.name }}</td>
@@ -9,15 +9,20 @@ Getting Data: {{ creatingHelpers$ | async }} <br />
 
   <ng-container matColumnDef="teamPositionName">
     <th mat-header-cell *matHeaderCellDef>Position</th>
-    <mat-select placeholder="Position">
-        <mat-option *ngFor=""></mat-option>
-    </mat-select>
     <td mat-cell *matCellDef="let element">{{ element.teamPositionName }}</td>
   </ng-container>
 
   <ng-container matColumnDef="microphone">
     <th mat-header-cell *matHeaderCellDef>Microphone</th>
-    <td mat-cell *matCellDef="let element">{{ element.microphone?.name }}</td>
+
+    <td mat-cell *matCellDef="let element">
+      <mat-select placeholder="Microphone" (selectionChange)="microphoneSelected($event.value, element.id)">
+        <mat-option [value]="" selected="selected">&nbsp;</mat-option>
+        <mat-option *ngFor="let microphone of (microphones$ | async)" [value]="microphone.name">
+          {{ microphone.name }}
+        </mat-option>
+      </mat-select>
+    </td>
   </ng-container>
 
   <ng-container matColumnDef="personalMonitorChannel">
@@ -26,9 +31,9 @@ Getting Data: {{ creatingHelpers$ | async }} <br />
   </ng-container>
 
   <ng-container matColumnDef="iemPack">
-        <th mat-header-cell *matHeaderCellDef>IEM Pack</th>
-        <td mat-cell *matCellDef="let element">{{ element.iemPack?.name }}</td>
-      </ng-container>
+    <th mat-header-cell *matHeaderCellDef>IEM Pack</th>
+    <td mat-cell *matCellDef="let element">{{ element.iemPack?.name }}</td>
+  </ng-container>
 
   <ng-container matColumnDef="needsHeadphones">
     <th mat-header-cell *matHeaderCellDef>Needs Headphones</th>

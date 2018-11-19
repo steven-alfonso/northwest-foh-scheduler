@@ -1,6 +1,6 @@
 export class Microphone {
     name: string;
-    inUse: boolean = false;
+    inUseBy: number = null;
 
     constructor(name:string) {
         this.name = name;

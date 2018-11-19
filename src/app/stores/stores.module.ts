@@ -1,16 +1,17 @@
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
+import { EquipmentStore } from './equipment/equipment.store';
 import { PlanningCenterStore } from './planning-center/planning-center.store';
 
 @NgModule({
-  declarations: [
-  ],
+  declarations: [],
   imports: [
     HttpClientModule,
   ],
   providers: [
-    PlanningCenterStore
+    EquipmentStore,
+    PlanningCenterStore,
   ],
-  bootstrap: []
+  bootstrap: [],
 })
-export class StoresModule { }
+export class StoresModule {}
