@@ -1,15 +1,14 @@
 <h2>Weekend Experience</h2>
 Getting Data: {{ creatingHelpers$ | async }} <br />
-<ng-container *ngIf="(arrangements$ | async) as arrangements"></ng-container>
-<table mat-table [dataSource]="personListDataSource" class="mat-elevation-z2" style="width:100%">
+<table mat-table [dataSource]="membersDataSource" class="mat-elevation-z2" style="width:100%">
   <ng-container matColumnDef="name">
     <th mat-header-cell *matHeaderCellDef>Name</th>
     <td mat-cell *matCellDef="let element">{{ element.name }}</td>
   </ng-container>
 
-  <ng-container matColumnDef="teamPositionName">
+  <ng-container matColumnDef="positionName">
     <th mat-header-cell *matHeaderCellDef>Position</th>
-    <td mat-cell *matCellDef="let element">{{ element.teamPositionName }}</td>
+    <td mat-cell *matCellDef="let element">{{ element.positionName }}</td>
   </ng-container>
 
   <ng-container matColumnDef="microphone">

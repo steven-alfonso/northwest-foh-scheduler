@@ -3,88 +3,52 @@ import { Config } from '@models/config.model';
 import { IEMPacks } from '@models/iem-pack.model';
 import { Member } from '@models/member.model';
 import { Microphone, Microphones } from '@models/microphone.model';
+import { PcoPlanDatum } from '@models/pco-plans.model';
 import { PersonalMonitor } from '@models/personal-monitor.model';
 import { Song, SongSet, SongSetType } from '@models/song-set.model';
 import { WeekendExperience } from '@models/weekend-experience.model';
 import { ConfigService } from '@services/config.service';
 import { PlanningCenterService } from '@services/planning-center.service';
 import { mergeDeep } from '@utils/merge-deep';
+import { updateOffset } from '@utils/update-offset';
+import to from 'await-to-js';
 import { plainToClass } from 'class-transformer';
 import find from 'lodash/find';
 import findIndex from 'lodash/findIndex';
 import orderBy from 'lodash/orderBy';
-import moment from 'moment/moment';
+import uniq from 'lodash/uniq';
+import moment from 'moment-timezone';
 import { BehaviorSubject, forkJoin, Observable } from 'rxjs';
-import { finalize, map, switchMap, take } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
+import { AngularFirestore } from '@angular/fire/firestore';
 
 @Injectable()
 export class PlanningCenterStore {
   private _currentArrangements: BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
   private _creatingHelpers: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private _microphones: BehaviorSubject<Microphone[]> = new BehaviorSubject<Microphone[]>([]);
-  private _weekendExperiences: BehaviorSubject<WeekendExperience[]> = new BehaviorSubject<
-    WeekendExperience[]
-  >([]);
+  // private _microphones: BehaviorSubject<Microphones> = new BehaviorSubject<Microphones>(null);
+  private _weekendExperiences: BehaviorSubject<WeekendExperience[]> = new BehaviorSubject<WeekendExperience[]>([]);
 
   public readonly weekendExperiences$ = this._weekendExperiences.asObservable().pipe(
     map(w => {
-      console.log(w);
       return w;
     })
   );
 
   public readonly currentArrangements$ = this._currentArrangements.asObservable();
-  // .pipe(
-  //   map(currentArrangements => {
-  //     return currentArrangements.map(arrangement => {
-  //       return {
-  //         ...arrangement,
-  //         possiblePositions: (arrangements => {
-  //           let possiblePositions = arrangements.map(ar => {
-  //             return ar.attributes.team_position_name;
-  //           });
-  //           return uniq(possiblePositions).sort();
-  //         })(arrangement.arrangements),
-  //       };
-  //     });
-  //   }),
-  //   map(currentArrangements => {
-  //     return currentArrangements.map(arrangement => {
-  //       return {
-  //         ...arrangement,
-  //         person: arrangement.members.map(member => {
-  //           return plainToClass(Member, {
-  //             id: member.relationships.person.data.id,
-  //             name: member.attributes.name,
-  //             teamPositionName: member.attributes.team_position_name,
-  //             needsHeadphones: true,
-  //           });
-  //         }),
-  //       };
-  //     });
-  //   }),
-  //   map(currentArrangements => {
-  //     return currentArrangements;
-  //   })
-  // );
   public readonly creatingHelpers$ = this._creatingHelpers.asObservable();
-
   public readonly microphones$ = this.configService.config$.pipe(
     map((config: Config) => {
       return config.microphones.map(mic => {
+        console.log(mic);
         return new Microphone(mic);
       });
     })
   );
 
-  constructor(
-    private planningCenterService: PlanningCenterService,
-    private configService: ConfigService
-  ) {
-    // this.planningCenterService.foo();
-  }
+  constructor(private planningCenterService: PlanningCenterService, private configService: ConfigService, private db: AngularFireStore) {}
 
-  createHelper(serviceTypeId: number | string, _startDate: Date, _endDate?: Date) {
+  async createHelper(serviceTypeId: number | string, _startDate: Date, _endDate?: Date) {
     const s = moment(_startDate).startOf('day');
     const endDate: number = _endDate
       ? moment(_endDate)
@@ -93,100 +57,126 @@ export class PlanningCenterStore {
       : s.endOf('day').unix();
     const startDate: number = s.unix();
     this._creatingHelpers.next(true);
-    this.planningCenterService
-      .getPlans(serviceTypeId)
-      .pipe(
-        map(p => {
-          let plans = p.map(plan => {
-            return plainToClass(WeekendExperience, {
-              id: plan.id,
-              start: new Date(plan.attributes.sort_date),
-              members: [],
-              personalMonitor: new PersonalMonitor(16),
-              iemPacks: new IEMPacks(),
-              microphones: new Microphones(),
-              positions: [],
-              songSets: [],
-            });
+    let err: Error = null;
+    let pcoPlans: PcoPlanDatum[] = [];
+    [err, pcoPlans] = await to(this.planningCenterService.getPlans(serviceTypeId));
+    if (err !== null) {
+      this.createHelperError(err);
+      return;
+    }
+    let config: Config;
+    [err, config] = await to(this.configService.config$.toPromise());
+    if (err) {
+      this.createHelperError(err);
+      return;
+    }
+    let weekendExperiences = orderBy(
+      pcoPlans
+        .map(plan => {
+          return plainToClass(WeekendExperience, {
+            id: parseInt(plan.id, 10),
+            start: updateOffset(new Date(plan.attributes.sort_date)),
+            members: [],
+            personalMonitor: new PersonalMonitor(16),
+            iemPacks: new IEMPacks(),
+            microphones: new Microphones(config.microphones),
+            positions: [],
+            songSets: []
           });
-          // Get plans within date range
-          return orderBy(
-            plans.filter(plan => {
-              const sortDate = moment(plan.start).unix();
-              return sortDate >= startDate && sortDate <= endDate;
-            }),
-            plan => {
-              return plan.start;
-            }
-          );
+        })
+        .filter(plan => {
+          const sortDate = moment(plan.start).unix();
+          return sortDate >= startDate && sortDate <= endDate;
         }),
-        take(1),
-        switchMap(plans => {
-          // Get team members on plans
-          return forkJoin(
-            plans.map(plan => {
-              return this.planningCenterService.getMembersOnPlan(serviceTypeId, plan.id).pipe(
-                map(members => {
-                  return {
-                    ...plan,
+      plan => {
+        return plan.start;
+      }
+    );
+    [err, weekendExperiences] = await to(
+      Promise.all(
+        weekendExperiences.map(
+          async (weekendExperience: WeekendExperience): Promise<WeekendExperience> => {
+            return new Promise<WeekendExperience>(async (resolve, reject) => {
+              const [errInner, members] = await to(this.planningCenterService.getMembersOnPlan(serviceTypeId, weekendExperience.id));
+              if (errInner !== null) {
+                reject(errInner);
+              } else {
+                resolve(
+                  plainToClass(WeekendExperience, {
+                    ...weekendExperience,
                     members: members.map(member => {
                       return new Member({
                         id: member.relationships.person.data.id,
                         name: member.attributes.name,
                         positionName: member.attributes.team_position_name,
-                        needHeadphones: true,
+                        needHeadphones: true
                       });
-                    }),
-                  };
-                })
-              );
-            })
-          );
-        }),
-        switchMap(weekendExperiences => {
-          return forkJoin(
-            weekendExperiences.map(weekendExperience => {
-              return this.planningCenterService
-                .getItemsOnPlan(serviceTypeId, weekendExperience.id)
-                .pipe(
-                  map(items => {
-                    let songSets$ = this.getSongSets(items, weekendExperience.id);
-                    songSets$.subscribe(a => {
-                      console.log(a);
-                    });
-                    return weekendExperience;
+                    })
                   })
                 );
-            })
-          );
-        }),
-        finalize(() => {
-          this._creatingHelpers.next(false);
-        })
+              }
+            });
+          }
+        )
       )
-      .subscribe(wkndExp => {
-        this._weekendExperiences.next(wkndExp);
-        // this._currentArrangements.next(plansMembers);
-      });
+    );
+
+    if (err) {
+      this.createHelperError(err);
+      return;
+    }
+
+    [err, weekendExperiences] = await to(
+      Promise.all(
+        weekendExperiences.map(
+          async (weekendExperience: WeekendExperience): Promise<WeekendExperience> => {
+            return new Promise<WeekendExperience>(async (resolve, reject) => {
+              const [errInner, items] = await to(this.planningCenterService.getItemsOnPlan(serviceTypeId, weekendExperience.id));
+              if (errInner !== null) {
+                reject(errInner);
+              }
+
+              let [errInner2, songSets] = await to(this.getSongSets(items, weekendExperience.id));
+              if (errInner2) {
+                reject(errInner2);
+              }
+              songSets = songSets.filter(a => a !== undefined && a !== null);
+              resolve(
+                plainToClass(WeekendExperience, {
+                  ...weekendExperience,
+                  songSets: songSets
+                })
+              );
+            });
+          }
+        )
+      )
+    );
+
+    if (err) {
+      this.createHelperError(err);
+      return;
+    }
+    weekendExperiences = weekendExperiences.map(
+      (weekendExperience: WeekendExperience): WeekendExperience => {
+        return plainToClass(WeekendExperience, {
+          ...weekendExperience,
+          positions: uniq(weekendExperience.members.map(member => member.positionName))
+        });
+      }
+    );
+    console.log(weekendExperiences);
+    this._weekendExperiences.next(weekendExperiences);
+    this._creatingHelpers.next(false);
   }
 
-  private getSongSets(items: any[], wkndExpId: number): Observable<SongSet[]> {
+  private createHelperError(err: Error) {
+    console.error(err);
+    this._creatingHelpers.next(false);
+  }
+
+  private async getSongSets(items: any[], wkndExpId: number): Promise<SongSet[]> {
     let praiseWorhsip = true;
-    // let worshipSongSet = plainToClass(SongSet, {
-    //   id: 1,
-    //   order: 0,
-    //   type: SongSetType.Worship,
-    //   songs: [],
-    // });
-    // let altarSongSet = plainToClass(SongSet, {
-    //   id: 2,
-    //   order: 1,
-    //   type: SongSetType.Altar,
-    //   songs: [],
-    // });
-    // this.updateWeekendExperience(wkndExpId, <Partial<WeekendExperience>>{
-    //   songSets: [worshipSongSet, altarSongSet],
-    // });
     let worshipSongs$: Observable<Song>[] = [];
     let altarSongs$: Observable<Song>[] = [];
     for (let i = 0; i < items.length; i++) {
@@ -195,64 +185,83 @@ export class PlanningCenterStore {
       } else if (items[i].attributes.item_type === 'song') {
         if (praiseWorhsip) {
           worshipSongs$ = worshipSongs$.concat([
-            this.planningCenterService
-              .getArrangementsBySongId(items[i].relationships.song.data.id)
-              .pipe(
-                map(arrangements => {
-                  return <Song>{
-                    id: items[i].relationships.song.data.id,
-                    title: items[i].attributes.title,
-                    keyName: items[i].attributes.key_name,
-                    sequence: items[i].attributes.sequence,
-                    description: items[i].attributes.description,
-                    tempo: this.getTempo(arrangements),
-                    leaderIds: [],
-                  };
-                })
-              ),
+            this.planningCenterService.getArrangementsBySongId(items[i].relationships.song.data.id).pipe(
+              map((arrangements: any[]) => {
+                return <Song>{
+                  id: items[i].relationships.song.data.id,
+                  title: items[i].attributes.title,
+                  keyName: items[i].attributes.key_name,
+                  sequence: items[i].attributes.sequence,
+                  description: items[i].attributes.description,
+                  tempo: this.getTempo(arrangements),
+                  leaderIds: []
+                };
+              })
+            )
           ]);
         } else {
           altarSongs$ = altarSongs$.concat([
-            this.planningCenterService
-              .getArrangementsBySongId(items[i].relationships.song.data.id)
-              .pipe(
-                map(arrangements => {
-                  return <Song>{
-                    id: items[i].relationships.song.data.id,
-                    title: items[i].attributes.title,
-                    keyName: items[i].attributes.key_name,
-                    sequence: items[i].attributes.sequence,
-                    description: items[i].attributes.description,
-                    tempo: this.getTempo(arrangements),
-                    leaderIds: [],
-                  };
-                })
-              ),
+            this.planningCenterService.getArrangementsBySongId(items[i].relationships.song.data.id).pipe(
+              map((arrangements: any[]) => {
+                return <Song>{
+                  id: items[i].relationships.song.data.id,
+                  title: items[i].attributes.title,
+                  keyName: items[i].attributes.key_name,
+                  sequence: items[i].attributes.sequence,
+                  description: items[i].attributes.description,
+                  tempo: this.getTempo(arrangements),
+                  leaderIds: []
+                };
+              })
+            )
           ]);
         }
       }
     }
-    let w = forkJoin(worshipSongs$).pipe(
-      map(songs => {
-        return plainToClass(SongSet, {
-          id: 1,
-          order: 0,
-          type: SongSetType.Worship,
-          songs: songs,
-        });
-      })
-    );
-    let a = forkJoin(altarSongs$).pipe(
-      map(songs => {
-        return plainToClass(SongSet, {
-          id: 2,
-          order: 1,
-          type: SongSetType.Altar,
-          songs: songs,
-        });
-      })
-    );
-    return forkJoin([w, a]);
+    const w = forkJoin(worshipSongs$)
+      .pipe(
+        map(songs => {
+          return plainToClass(SongSet, {
+            id: 1,
+            order: 0,
+            type: SongSetType.Worship,
+            songs: songs
+          });
+        }),
+        map(songSet => {
+          return plainToClass(SongSet, {
+            ...songSet,
+            songs: orderBy(songSet.songs, ['sequence'])
+          });
+        })
+      )
+      .toPromise();
+
+    const a = forkJoin(altarSongs$)
+      .pipe(
+        map(songs => {
+          return plainToClass(SongSet, {
+            id: 2,
+            order: 1,
+            type: SongSetType.Altar,
+            songs: songs
+          });
+        }),
+        map(songSet => {
+          return plainToClass(SongSet, {
+            ...songSet,
+            songs: orderBy(songSet.songs, ['sequence'])
+          });
+        })
+      )
+      .toPromise();
+    return forkJoin([w, a])
+      .pipe(
+        map(songSets => {
+          return orderBy(songSets, 'order');
+        })
+      )
+      .toPromise();
   }
 
   private getTempo(arrangements: any[]): number {
@@ -274,41 +283,50 @@ export class PlanningCenterStore {
     if (songSetIndex === -1) {
       return;
     }
-    console.log('addSongtoSet', song);
     updateValue = <Partial<WeekendExperience>>{
       songSets: [
         ...wkndExp.songSets.slice(0, songSetIndex),
         wkndExp.songSets[songSetIndex].songs.concat([song]),
-        ...wkndExp.songSets.slice(songSetId + 1),
-      ],
+        ...wkndExp.songSets.slice(songSetId + 1)
+      ]
     };
 
     this.updateWeekendExperience(wkndExpId, updateValue);
   }
 
   updateWeekendExperience(id: number, update: Partial<WeekendExperience>) {
-    console.log('updateWknExp', update);
-    let wkndExps = this._weekendExperiences.getValue();
+    const wkndExps = this._weekendExperiences.getValue();
     const wkndExpIndex = findIndex(wkndExps, { id: id });
     if (wkndExpIndex >= 0) {
       this._weekendExperiences.next(<WeekendExperience[]>[
         ...wkndExps.slice(0, wkndExpIndex),
         <WeekendExperience>mergeDeep(wkndExps[wkndExpIndex], update),
-        ...wkndExps.slice(wkndExpIndex + 1),
+        ...wkndExps.slice(wkndExpIndex + 1)
       ]);
     }
   }
 
-  microphoneSelected(micId: string, inUseBy: number, serviceId: number) {
-    const mics = this._microphones.getValue();
-    const index = findIndex(mics, { name: micId });
-    if (index >= 0) {
-      this._microphones.next(<Microphone[]>[
-        ...mics.slice(0, index),
-        <Microphone>mergeDeep(mics[index], { inUseBy: inUseBy }),
-        ...mics.slice(index + 1),
-      ]);
+  microphoneSelected(micId: string, inUseById: number, wkndExpId: number) {
+    const wkndExps = this._weekendExperiences.getValue();
+    console.log(wkndExps);
+    const wkndExpIndex = findIndex(wkndExps, { id: wkndExpId });
+    console.log('wknEpxIndex:', wkndExpIndex);
+    if (wkndExpIndex === -1) {
+      return;
     }
+    let mics: Microphone[] = wkndExps[wkndExpIndex].microphones.microphones;
+    const micIndex = findIndex(mics, { name: micId });
+    console.log('micIndex', micIndex);
+    if (micIndex === -1) {
+      return;
+    }
+    mics = [...mics.slice(0, micIndex), <Microphone>mergeDeep(mics[micIndex], { inUseBy: inUseById }), ...mics.slice(micIndex + 1)];
+    this._weekendExperiences.next(<WeekendExperience[]>[
+      ...wkndExps.slice(0, wkndExpIndex),
+      <WeekendExperience>mergeDeep(wkndExps[wkndExpIndex], { microphones: { microphones: mics } }),
+      ...wkndExps.slice(wkndExpIndex + 1)
+    ]);
+    console.log(this._weekendExperiences.getValue());
   }
 
   unselectMicrophone(micId: string, serviceId: number) {

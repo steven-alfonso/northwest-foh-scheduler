@@ -1,16 +1,16 @@
 export class Microphone {
-    name: string;
-    inUseBy: number = null;
+  name: string;
+  inUseBy: number = null;
 
-    constructor(name:string) {
-        this.name = name;
-    }
+  constructor(name: string) {
+    this.name = name;
+  }
 }
 
 export class Microphones {
-    microphones: Microphone[];
+  microphones: Microphone[];
 
-    constructor() {
-        this.microphones = [];
-    }
+  constructor(micNames: string[] = []) {
+    this.microphones = micNames.map(m => new Microphone(m));
+  }
 }
